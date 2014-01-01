@@ -1,0 +1,66 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title> SAML (Security Assertion Markup Lanugage)</title>
+  <script src="bower_components/raphael/raphael-min.js"></script>
+  <script src="bower_components/underscore/underscore-min.js"></script>
+  <script src="bower_components/js-sequence-diagrams/build/sequence-diagram-min.js"></script>
+
+ 
+<link href="https://fonts.googleapis.com/css?family=Architects+Daughter" rel="stylesheet" type="text/css">
+<script src="bower_components/jquery/jquery.js"></script>
+
+<style>
+
+h3 {
+font-family: 'Architects Daughter', 'Helvetica Neue', Helvetica, Arial, serif;
+font-size: 18px;
+font-weight: bold;
+margin-bottom: 8px;
+color: #474747;
+
+}
+</style>
+
+
+</head>
+<body>
+<h3>SAML (Security Assertion Markup Lanugage)</h3>
+
+<textarea id="data" name="data" rows="10" cols="120">
+  Title: SAML (Security Assertion Markup Lanugage) Single-Sign-On (SSO) - Browser Based 
+  User->UserAgent:  Request
+  UserAgent->ServiceProvider:  Login Request 
+  Note right of ServiceProvider: Assertion Request Issuing 
+  
+  ServiceProvider->UserAgent:  Assertion Request
+  UserAgent-->IdentityProvider: Assertion Request Redirect
+  IdentityProvider->UserAgent: Assertion Response
+
+  Note right of IdentityProvider: Assertion Issuing and Signing 
+  UserAgent-->ServiceProvider: Assertion Response Redirect
+
+  Note right of ServiceProvider: 1.Validate Signature\n 2.Evaluate Assertion\n3.Authorize User
+          
+
+</textarea>
+<div id="diagram"></div>
+<script>
+
+$(document).ready( function() {
+  var diagram = Diagram.parse( $('#data').val() );
+  diagram.drawSVG("diagram", {theme: 'simple'});
+   
+ $('#data').change( function() {
+  $('#diagram').html('');
+  diagram = Diagram.parse( $('#data').val() );
+  diagram.drawSVG("diagram", {theme: 'simple'});
+ });
+
+
+});
+</script>
+	
+</body>
+</html>
