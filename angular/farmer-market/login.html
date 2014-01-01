@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" ng-app>
+<head>
+	<meta charset="UTF-8">
+	<title>Angular/Bootstrap Login Form Validation</title>
+
+<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" />
+<style>
+/* ref: http://www.youtube.com/watch?v=t6XUPVmlYbY */
+input.ng-invalid.ng-dirty {
+   border:1px solid red;
+ }
+
+.login {
+ width:500px;
+ padding-top:20px;
+}
+ 
+.ng-valid {
+
+
+ }
+
+.ng-invalid-email {
+
+
+ }
+ .ng-valid-email {
+
+
+ }
+
+</style>
+</head>
+<body>
+
+<div class='container login'>
+ <form name='frm' action="">
+ 
+<div> 
+ <label for="email">Email</label>
+  <input placeholder='Email'  class='form-control'
+         type="email"
+         name='email' ng-model='user.email' required /> 
+  <span ng-show='frm.email.$error.required'>Required</span>
+  <span ng-show='frm.email.$error.email'>Not an email</span>
+ </div>
+
+<div class='form-group'> 
+ <label for="pwd">Password</label>
+  <input placeholder='Password' class='form-control'
+         type="password" name='pwd' ng-model='user.password' 
+   ng-minlength='5'
+   ng-maxlength='10'
+   required /> 
+  <span ng-show='frm.pwd.$error.required'>Required</span>
+  <span ng-show='frm.pwd.$error.minlength'>too short</span>
+  <span ng-show='frm.pwd.$error.maxlength'>too long</span>
+
+ </div class='form-group'>
+ <button class='btn btn-primary' ng-disabled='frm.$invalid'>Login</button>
+
+ </form>
+<script src='http://ajax.googleapis.com/ajax/libs/angularjs/1.2.5/angular.min.js'></script>
+
+</div>
+</body>
+</html>
