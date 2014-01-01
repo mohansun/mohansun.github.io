@@ -1,0 +1,1543 @@
+<!DOCTYPE html> 
+<html manifest="cache.manifest"> 
+  <head> 
+    <meta charset="utf-8" /> 
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge;chrome=1" /> 
+    <title>Linux Files Systems</title> 
+    <link href="./css/slides.css" rel="stylesheet" type="text/css" /> 
+    
+    
+ 
+  </head> 
+  <body> 
+    <div class="presentation"> 
+      <div id="presentation-counter"></div> 
+      <div class="slides"> 
+        <div class="slide"> 
+          
+          <section class="middle landing"> 
+            <p>Linux File Systems</p> 
+            <p>Mohan Chinnappan</p>
+            <span><font size='-1'> <p> Zoom in/out: <span class="key">Ctrl</span> + <span class="key">+/-</font></p></font></span> 
+             
+          </section> 
+        </div> 
+                
+        <div class="slide"> 
+          
+          <section class="middle intro"> 
+            <hgroup> 
+              <h2> 
+               File Systems
+              </h2> 
+              <h2> 
+               
+              </h2> 
+            </hgroup> 
+            <p>Every filesystem must keep track of two basic things: <br>where your data is, and where the free space is</p> 
+          </section> 
+        </div> 
+ 
+ 
+        <div class="slide"> 
+          <header>Topics covered today</header> 
+          <section> 
+          
+            <center>
+            <ol id="timeline"> 
+              <li><span class="year">Linux Arch</span></li> 
+              <li><span class="year">Minix FS</span></li> 
+              <li><span class="year">Unix FS</span> </li> 
+              <li><span class="year">Ext FS</span> </li> 
+              <li><span class="year">Ext2 FS</span></li> 
+              <li><span class="year">Ext3 FS</span></li> 
+              <li><span class="year">Ext4 FS</span></li> 
+              <li><span class="year">Btrfs</span></li> 
+              <li><span class="year">ZFS</span></li>              
+            </ol> 
+           </center>           
+          </section> 
+        </div> 
+ 
+        
+        <div class="slide"> 
+            <style> 
+             h2 {
+              margin-top: 5px;
+              margin-left: 50px;
+              font-size: 25px;              
+            }
+          </style> 
+          <h2> Linux Arch</h2>
+          <img src='./img/Kernel.png'/>           
+        </div> 
+ 
+        <div class="slide"> 
+            <style> 
+             h2 {
+              margin-top: 5px;
+              margin-left: 50px;
+              font-size: 25px;              
+            }
+            .text { font-size: 8px; margin-left:50px; }
+            li { padding: 2px; }
+          
+          </style> 
+          <h2> Booting process</h2>
+      <p class='text'>    
+      BIOS --> Bootloader --> Kernel -> start Scheduler, run init and go idle
+      </p>
+      <center><img src='./img/boot.gif'/></center>
+     
+</ul>
+</div> 
+
+<div class='slide'>
+<h2>Disk Geometry</h2>
+ <center> <img src='./img/diskG.png' height='600'/></center>
+</div>
+
+<div class='slide'>
+<h2>Alewife Parking Lot</h2>
+ <center> <img src='./img/alewifeParking.png' height='600'/></center>
+</div>
+
+
+<div class="slide"> 
+            <style> 
+             h2 {
+              margin-top: 5px;
+              margin-left: 50px;
+              font-size: 25px;              
+            }
+            .text { font-size: 8px; margin-left:50px; }
+            li { padding: 2px; }
+           
+          </style> 
+          <h2> Booting process -- contd.</h2>
+        
+
+<ul>
+<li>Processor executes code at address 0xFFFF0 in BIOS (in the flash memory in mother board)<li>
+<li> Power-on self test (POST) and local device enumeration and initialization. After the POST is complete, it is flushed from memory, but the BIOS runtime services remain and are available to the target operating system.</li>
+<li>BIOS determines which devices are candidates for boot. BIOS runtime searches for devices that are both active and bootable in the order of preference defined by the complementary metal oxide semiconductor (CMOS) settings.<li>
+<li>Usually, Linux is booted from a hard disk, where the Master Boot Record (MBR) contains the primary boot loader. The MBR is a 512-byte sector, located in the first sector on the disk (sector 1 of cylinder 0, head 0). After the MBR is loaded into RAM, the BIOS yields control to it.</li>
+<li>
+<textarea cols='60' rows='10'>
+$ sudo dd if=/dev/sda1 of=mbr2.bin bs=512 count=1 
+1+0 records in
+1+0 records out
+512 bytes (512 B) copied, 0.033495 s, 15.3 kB/s
+$ od -xa mbr2.bin 
+0000000    52eb    4e90    4654    2053    2020    0020    0802    0000
+          k   R dle   N   T   F   S  sp  sp  sp  sp nul stx  bs nul nul
+0000020    0000    0000    f800    0000    003f    00f0    003f    0000
+        nul nul nul nul nul   x nul nul   ? nul   p nul   ? nul nul nul
+0000040    0000    0000    0000    0080    b7bf    0c19    0000    0000
+        nul nul nul nul nul nul nul nul   ?   7  em  ff nul nul nul nul
+0000060    000a    0000    0000    0000    0000    0010    0000    0000
+         nl nul nul nul nul nul nul nul nul nul dle nul nul nul nul nul
+0000100    00f6    0000    0001    0000    d881    0770    e835    31ac
+          v nul nul nul soh nul nul nul soh   X   p bel   5   h   ,   1
+0000120    0000    0000    33fa    8ec0    bcd0    7c00    b8fb    07c0
+        nul nul nul nul   z   3   @  so   P   < nul   |   {   8   @ bel
+0000140    d88e    681e    0067    88cb    0e16    b400    bb41    55aa
+         so   X  rs   h   g nul   K  bs syn  so nul   4   A   ;   *   U
+0000160    13cd    0c72    fb81    aa55    0675    c1f7    0001    0375
+          M dc3   r  ff soh   {   U   *   u ack   w   A soh nul   u etx
+0000200    d8e9    1e00    ec83    6818    001a    48b4    168a    000e
+          i   X nul  rs etx   l can   h sub nul   4   H  nl syn  so nul
+0000220    f48b    1f16    13cd    839f    18c4    589e    721f    3be1
+         vt   t syn  us   M dc3  us etx   D can  rs   X  us   r   a   ;
+0000240    0b06    7500    a3db    000f    2ec1    000f    1e04    335a
+        ack  vt nul   u   [   #  si nul   A   .  si nul eot  rs   Z   3
+0000260    b9db    2000    c82b    ff66    1106    0300    0f16    8e00
+          [   9 nul  sp   +   H   f del ack dc1 nul etx syn  si nul  so
+0000300    ffc2    1606    e800    0046    c82b    ef77    00b8    cdbb
+          B del ack syn nul   h   F nul   +   H   w   o   8 nul   ;   M
+0000320    661a    c023    850f    0031    8166    54fb    5043    0f41
+        sub   f   #   @  si enq   1 nul   f soh   {   T   C   P   A  si
+0000340    2685    8100    02f9    0f01    1e82    1600    0768    16bb
+        enq   & nul soh   y stx soh  si stx  rs nul syn   h bel   ; syn
+0000360    4868    1616    0968    6600    6653    6653    1655    1616
+          h   H syn syn   h  ht nul   f   S   f   S   f   U syn syn syn
+0000400    b868    6601    0e61    cd07    e91a    0162    9090    6066
+          h   8 soh   f   a  so bel   M sub   i   b soh dle dle   f   `
+0000420    061e    a166    0011    0366    1c06    1e00    6866    0000
+         rs ack   f   ! dc1 nul   f etx ack  fs nul  rs   f   h nul nul
+0000440    0000    5066    5306    0168    6800    0010    42b4    168a
+        nul nul   f   P ack   S   h soh nul   h dle nul   4   B  nl syn
+0000460    000e    1f16    f48b    13cd    5966    5a5b    5966    5966
+         so nul syn  us  vt   t   M dc3   f   Y   [   Z   f   Y   f   Y
+0000500    0f1f    1682    6600    06ff    0011    1603    000f    c28e
+         us  si stx syn nul   f del ack dc1 nul etx syn  si nul  so   B
+0000520    0eff    0016    bc75    1f07    6166    a0c3    01f8    08e8
+        del  so syn nul   u   < bel  us   f   a   C  sp   x soh   h  bs
+0000540    a000    01fb    02e8    eb00    b4fe    8b01    acf0    003c
+        nul  sp   { soh   h stx nul   k   ~   4 soh  vt   p   ,   < nul
+0000560    840f    0009    0eb4    07bb    cd00    eb10    c3f0    0a0d
+         si eot  ht nul   4  so   ; bel nul   M dle   k   p   C  cr  nl
+0000600    2041    6964    6b73    7220    6165    2064    7265    6f72
+          A  sp   d   i   s   k  sp   r   e   a   d  sp   e   r   r   o
+0000620    2072    636f    7563    7272    6465    0d00    420a    4f4f
+          r  sp   o   c   c   u   r   r   e   d nul  cr  nl   B   O   O
+0000640    4d54    5247    6920    2073    696d    7373    6e69    0067
+          T   M   G   R  sp   i   s  sp   m   i   s   s   i   n   g nul
+0000660    0a0d    4f42    544f    474d    2052    7369    6320    6d6f
+         cr  nl   B   O   O   T   M   G   R  sp   i   s  sp   c   o   m
+0000700    7270    7365    6573    0064    0a0d    7250    7365    2073
+          p   r   e   s   s   e   d nul  cr  nl   P   r   e   s   s  sp
+0000720    7443    6c72    412b    746c    442b    6c65    7420    206f
+          C   t   r   l   +   A   l   t   +   D   e   l  sp   t   o  sp
+0000740    6572    7473    7261    0d74    000a    0000    0000    0000
+          r   e   s   t   a   r   t  cr  nl nul nul nul nul nul nul nul
+0000760    0000    0000    0000    0000    9b7e    c8b0    0000    aa55
+        nul nul nul nul nul nul nul nul   ~ esc   0   H nul nul   U   *
+0001000
+
+ 
+</textarea>
+<li>
+
+<li>When the second-stage boot loader is in RAM and executing, a splash screen is commonly displayed, and Linux and an optional initial RAM disk (tmp root file system) are loaded into memory. When the images are loaded, the second-stage boot loader passes control to the kernel image and the kernel is decompressed and initialized.</li>
+<li>The second-stage boot loader checks the system hardware, enumerates the attached hardware devices, mounts the root device, and then loads the necessary kernel modules.</li>
+ <li>The first user-space program (init) starts, and high-level system initialization is performed.</li>
+</ul>
+</p>
+</div>
+
+<div class="slide"> 
+            <style> 
+             h2 {
+              margin-top: 5px;
+              margin-left: 50px;
+              font-size: 25px;              
+            }
+            .text { font-size: 8px; margin-left:50px; }
+            li { padding: 2px; }
+          
+          </style> 
+          <h2> Booting process -- contd.</h2>
+      <p class='text'>    
+     Master Boot Record (MBR)
+      </p>
+<center><img src='./img/MBR.gif'/></center>
+ <ul><li>The first 446 bytes are the primary boot loader, which contains both executable code and error message text. The next sixty-four bytes are the partition table, which contains a record for each of four partitions (sixteen bytes each). The MBR ends with two bytes that are defined as the magic number (0xAA55). The magic number serves as a validation check of the MBR.
+     </li>
+</ul>
+</div>
+
+<div class="slide"> 
+            <style> 
+             h2 {
+              margin-top: 5px;
+              margin-left: 50px;
+              font-size: 25px;              
+            }
+            .text { font-size: 8px; margin-left:50px; }
+            li { padding: 2px; }
+          
+          </style> 
+          <h2> Booting process -- contd.</h2>
+<ul>
+<li>The job of the primary boot loader is to find and load the secondary boot loader (stage 2). It does this by looking through the partition table for an active partition. When it finds an active partition, it scans the remaining partitions in the table to ensure that they're all inactive. When this is verified, the active partition's boot record is read from the device into RAM and executed.</li>
+
+<li><b> Stage 2 boot loader (Kernel Loader)</b>: Loads the Linux kernel, initrd ( initial-RAM disk)  image and optional initial RAM disk and invokes the kernel image. The first and second stage boot loaders combined are called Linux Loader (LILO) or GRand Unified Bootloader (GRUB)</li>
+<li><b>Kernel</b>: Kernel images is ZImage( compressed and < 512K) or bzImage( compressed images > 512K). Kernel images is decompressed and placed in the high memory.<br>
+<img src='./img/kernelBoot.gif' </img>
+<br>
+ In the end, a call is made to kernel_thread (in arch/i386/kernel/process.c) to start the init function, which is the first user-space process. 
+
+<br> Finally, the idle task is started and the scheduler can now take control (after the call to cpu_idle). With interrupts enabled, the pre-emptive scheduler periodically takes control to provide multitasking.
+</li>
+ 
+</ul>
+
+</div> 
+
+<div class="slide"> 
+            <style> 
+             h2 {
+              margin-top: 5px;
+              margin-left: 50px;
+              font-size: 25px;              
+            }
+            .text { font-size: 8px; margin-left:50px; }
+            li { padding: 2px; }
+          
+          </style> 
+          <h2> Booting process -- contd.</h2>
+<ul>
+   <li>
+This initrd serves as a temporary root file system in RAM and allows the kernel to fully boot without having to mount any physical disks. Since the necessary modules needed to interface with peripherals can be part of the initrd, the kernel can be very small, but still support a large number of possible hardware configurations. After the kernel is booted, the root file system is pivoted (via pivot_root) where the initrd root file system is unmounted and the real root file system is mounted.
+</li>
+</ul>
+</div>
+   
+        
+ <div class="slide"> 
+            <style> 
+             h2 {
+              margin-top: 5px;
+              margin-left: 50px;
+              font-size: 25px;              
+            }
+            .text { font-size: 8px; margin-left:50px; }
+            li { padding: 2px; }
+          
+          </style> 
+          <h2> File Systems</h2>
+<ul>
+   <li>
+   Every filesystem must keep track of two basic things: where your data is, and where the free space is.   -- Jeff Bonwick (ZFS)
+  </li>
+<li>
+<br><b>Multiples of bytes</b><br>
+
+<table border='1'>
+<tr><td>kilobyte (kB)</td></td><td>10^3 	</td></td><td>2^10	<br> pow(2,10)</td></tr>
+<tr><td>megabyte (MB)</td></td><td>10^6</td></td><td>  	2^20   </td></tr> 
+<tr><td>gigabyte (GB)</td></td><td>10^9</td></td><td>	2^30	</td></tr> 
+<tr><td>terabyte (TB)</td></td>	<td>10^12</td></td><td>	2^40	</td></tr> 
+<tr><td>petabyte (PB)</td></td><td>10^15	</td></td><td>2^50	</td></tr> 
+<tr><td>exabyte (EB)</td></td><td>10^18	</td></td><td>2^60	</td></tr> 
+<tr><td>zettabyte (ZB)</td></td><td>10^21</td></td><td>	2^70	 </td></tr>
+<tr><td>yottabyte (YB)</td></td><td>10^24</td></td><td>	2^80</td></tr>
+</table>
+</li>
+
+<li>
+
+<br>Linux is a Unix-like operating system
+
+<br>Every Linux filesystem implements a basic set of common concepts derivated from the
+Unix operating system
+<br>
+<br>- files are represented by inodes
+<br>- directories are simply files containing a list of entries
+<br>- devices can be accessed by requesting I/O on special files
+
+</li>
+
+</ul>
+</div>
+
+     
+ <div class="slide"> 
+            <style> 
+             h2 {
+              margin-top: 5px;
+              margin-left: 50px;
+              font-size: 25px;              
+            }
+            .text { font-size: 8px; margin-left:50px; }
+            p { padding: 10px; }
+            .code { font-family: monospace}
+          </style> 
+          <h2>inodes (index nodes) or inumber</h2>
+
+<p>
+<br>- Each file is represented by a structure, called an inode
+ <br> inode ( is a structure with):
+ <br>    description of the file:  
+<br>	(file type, access rights, owners, timestamps, size, pointers to data blocks that are allocated to the file)
+<br>
+<span class='code'>
+<br>	$  stat /etc/passwd
+<br>	 File: `/etc/passwd'
+<br>	  Size: 2348      	Blocks: 8          IO Block: 4096   regular file
+<br>	Device: 806h/2054d	<b>Inode: 533</b>         Links: 1
+<br>	Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+<br>	Access: 2010-11-16 18:13:24.850056151 -0500
+<br>	Modify: 2010-09-24 18:14:29.584169850 -0400
+<br>	Change: 2010-09-24 18:14:29.628742830 -0400
+</span>
+</p>
+</div>
+
+<div class="slide"> 
+            <style> 
+             h2 {
+              margin-top: 5px;
+              margin-left: 50px;
+              font-size: 25px;              
+            }
+            .text { font-size: 8px; margin-left:50px; }
+            p { padding: 10px; }
+            .code { font-family: monospace}
+          </style> 
+          <h2>inode and blocks</h2>
+           <img src='./img/ext2_3BlockMap.png'/>
+<p>
+</p>
+</div>
+
+<div class="slide"> 
+<h2>Inode Structure</h2>
+<p>
+<br>The Inode data structure is typically 128 bytes in size.
+<br>
+<br>Non-Essential means the field might be unused.
+<br>
+<br>Bytes 0-1: File mode (essential) 
+<br>Bytes 2-3: Lower 16 bits of user ID (non-essential)
+<br>Bytes 4-7: Lower 32 bits of size in bytes (essential)
+<br>Bytes 8-11: Access time (non-essential)
+<br>Bytes 12-15: Change time (non-essential)
+<br>Bytes 16-19: Modification time (non-essential)
+<br>Bytes 20-23: Delete time (non-essential)
+<br>Bytes 24-25: Lower 16 bits of group ID (non-essential)
+<br>Bytes 26-27: Link count (non-essential)
+<br>Bytes 28-31: Sector count (non-essential)
+<br>Bytes 32-35: flags (non-essential)
+<br>Bytes 36-39: unused
+<b>
+<br>Bytes 40-87: 12 direct block pointers (essential)
+<br>Bytes 88-91: 1 single indirect block pointer (essential)
+<br>Bytes 92-95: 1 double indirect block pointer (essential)
+<br>Bytes 96-99: 1 triple indirect block pointer (essential)
+</b>
+</p>
+</div>
+<div class="slide"> 
+<h2>Inode Structure contd.</h2>
+<p>
+
+<br>Bytes 100-103: Generation number (non-essential)
+<br>Bytes 104-107: Extended attribute block (file acl) (non-essential)
+<br>Bytes 108-111: Upper 32 bits of size / Directory ACL (essential/non-essential)
+<br>Bytes 112-115: Block address of fragment
+<br>Bytes 116-116: Fragment index in block (non-essential)
+<br>Bytes 117-117: Fragment size (non-essential)
+<br>Bytes 118-119: unused
+<br>Bytes 120-121: Upper 16 bits of user ID (non-essential)
+<br>Bytes 122-123: Upper 16 bits of group ID (non-essential)
+<br>Bytes 124-127: unused
+</p>
+</div>
+
+<div class="slide"> 
+            <style> 
+             h2 {
+              margin-top: 5px;
+              margin-left: 50px;
+              font-size: 25px;              
+            }
+            .text { font-size: 8px; margin-left:50px; }
+            p { padding: 10px; }
+            .code { font-family: monospace}
+          </style> 
+          <h2>inode - space calculation</h2>
+           
+<p>
+Suppose that a file is 1MB and a block is 8KB. Then the file will need 128 blocks to store it contents. <br>
+The question is: how do we keep track of these 128 data blocks of the file. We can do this by using index blocks (also called indirect blocks) that contain pointers to other index and data blocks. In Linux,  the inode contains  15 pointers. The first 12 pointers are to data blocks. The 13th pointer points to a single indirection index block, i.e. an index block with pointers to data blocks. The 14th pointer points to a double indirection index block, i.e. an index block that points to index blocks that point to data blocks. The 15th pointer points to a triple indirection index block. If we assume that a block is 8KB and a pointer is 8 bytes, then an index block can contain 1K ( = 2^^10) pointers. The maximum size of a file in the file system will be 8KB*(12 + 2**10 + 2**20 + 2**30), that is more than 8TB. <br>
+
+<span class='code'>>>> 8*pow(2,10) * ( 12 + pow(2,10) + pow(2,20) + pow(2,30))
+<br>8804691443712L
+</span>
+<br>
+With 8 KB data blocks, if the file is 96 KB or smaller, then it uses 12 blocks or less on disk, and all those block addresses are stored directly in the inode itself.
+<br><br>
+
+QUESTION:<br>
+With an 8 KB block size and 4-byte disk addresses, We can fit 2048 disk addresses in the single indirect block. So, for files from 96 KB + 1 byte to 16 MB - How many single indirect blocks are required?
+
+</div>
+
+<div class="slide"> 
+            <style> 
+             h2 {
+              margin-top: 5px;
+              margin-left: 50px;
+              font-size: 25px;              
+            }
+             
+            p { padding: 10px; }
+            .code { font-family: monospace}
+          </style> 
+          <h2>inode - space calculation - ANSWER</h2>
+<p>
+<span class='code'>
+<br>>>> bsize =  8*pow(2,10)
+<br>>>> fsize = 16*pow(2,20)
+<br>>>> ptrsize = 4
+<br>>>> num_ptrs_per_block = bsize/ptrsize
+<br>>>> print num_ptrs_per_block
+<br>2048
+<br>>>> num_blocks_reqd_for_file = fsize/bsize
+<br>>>> print num_blocks_reqd_for_file
+<br>2048
+<br> 
+</span>
+ANSWER: Number of  single indirection block required: ONE
+<br>
+<br>
+
+The inode pointer structure not only allows for files to easily be allocated to non-contiguous blocks, it also allows the data at a particular location inside a file to be easily located. This is possible because the logical block size is fixed.
+<br>
+<br>
+QUESTION: <br>If each block is 8 KB, file's data at 120 to 128 KB would be pointed to by the Nth pointer of the first indirect block (assuming twelve direct pointers in the inode pointer structure). What is value of N?
+
+
+</p>
+
+</div>
+
+<div class="slide"> 
+            <style> 
+             h2 {
+              margin-top: 5px;
+              margin-left: 50px;
+              font-size: 25px;              
+            }
+             
+            p { padding: 10px; }
+            .code { font-family: monospace; }
+          </style> 
+          <h2>inode - space calculation - ANSWER</h2>
+<p>
+<span class='code'>
+<br>>>>  ( 128*pow(2,10) - 12 * bsize ) / bsize
+<br>>>> 4 
+<br> 
+</span>
+ANSWER: ................................... Value of N is :  FOUR
+</div>
+
+<div class="slide"> 
+<h2>Directory</h2>
+
+  <img src='./img/dir.png'/>
+   <p>Each directory can contain files and subdirectories --  is a file containing a list of entries.
+   <br><br>When a file is asked: kernel searches in the dirs and find the inode for it. 
+   <br>FileName => inode number. inode is loaded into the memory.
+   <span class='code'>
+<br>$ ls -il
+<br>total 9088
+<br><b>1082925</b> -rwxr-xr-x 1 mohan mohan  527289 2010-11-17 08:58 <b>080515-Week1-Intro-4up.pdf</b>
+<br>1082926 -rwxr-xr-x 1 mohan mohan  292137 2010-11-17 08:53 hfs.pdf
+</span>
+  </p>
+
+</div>
+
+<div class='slide'>
+<h2>Links ( 2 kinds )</h2>
+<p>
+<br><b>    Hard links</b>
+	<br>Several names can be associated with a single inode.
+       <br> Adding a link : creating a directory entry and increment the links count in the inode (++count)
+       <br>Removing a link: (rm fn) : link count is decremented (--count) and if count == 0 deallocate that inode
+       <br>
+      <br> - can be used within a single FS (not possible to have a cross-FS hard link)
+       <br>- can point to only files (not dirs, to avoid circular references)
+
+<br>
+<br><b>   Symbolic links</b>
+      <br>  Simply files which contain target filename as its content. They do not point to an inode
+      <br> eg. file1 will have the pathname name of the file2 (target file) as its content. So file1 becomes symbolic link for file2
+      <br>  Kernel: got(slink) ==>  read(it_contents) ==> get(inode ) of the target file
+      <br> 
+      <br> - can be used for cross-FS links
+      <br> - can point to any file, even to non-existent file
+      <br>  - uses disk space (for storing the pathname of target file)
+      <br>  - has overhead for kernel in pathname2inode conversion
+</p>
+
+</div>
+
+<div class='slide'>
+<p>
+<br><b> Special files</b>
+<br>    Do not use any space on FS
+<br>   It is only an access point to the device driver
+<br>
+<br>   Two types: character and block
+<br>	Char:  allows I/O operations in character mode
+<br>        Block: requires data to be written in block mode via the buffer cache functions.
+<br>
+<br>      Kernel: When an I/O request is made on a special file, it is forwarded to a (pseudo) device driver.
+</p>
+</div>
+
+
+<div class='slide'>
+<h2>VFS (Virtual File System)</h2>
+ <center> <img src='./img/vfs.png' height='600'/></center>
+</div>
+
+
+<div class='slide'>
+<h2>VFS (Virtual File System)</h2>
+<p>
+ <br>Indirection layer which handles the file oriented system calls and calls the necessary functions in the physical filesystem code to do the I/O.
+<br> Helps in integration and the use of several filesystem types in OS
+<br> Has structure independent manipulations and redirects the call to a function contained in the physical filesystem code (responsible for
+handling the structure dependent operations via buffer cache  and finally to the hardware level)
+<br>
+<br>Kernel: on file oriented system call, calls functions in VFS.
+</p>
+</div>
+
+
+<div class='slide'>
+<h2>VFS (Virtual File System)</h2>
+<p>
+<br>
+<br> - defines a set of functions that every filesystem has to implement (operations associated: filesystems, inodes,
+and open files)
+<br> -  knows about filesystem types supported in the kernel (table: fs ==> mount() fn for that fs)
+<br>    <b>mount()</b>: will be called when the FS is being mounted. 
+<br>
+<br>            Responsible for: reading the superblock from the disk
+<br>                             intializing its internal vars
+<br>                             returns FS descriptor, which provides handle to access physical level FS functions
+<br><br>    <b>FS Descriptor</b>:
+<br>        Data common to all FS
+<br>        Ptrs to functions provided by physical level FS kernel code to allow VFS to access the FS internel functions
+<br>        private data maintained by the physical FS code
+<br>
+<br>	two types: 
+<br>            inode descriptor (has ptrs to functions that can be used to act any file -- create, unlink)
+<br>            open file descriptor (has ptr to functions which can act on the open file -- read, write)
+</p>
+</div>
+  
+<div class='slide'>
+<h2>Minix FS</h2>
+
+<p>
+<br>Very early version of Linux had Minix FS (Linux was inspired by MINIX)
+<br>
+<br> + Minix FS was efficient and relatively bug-free   
+<br>
+<br>Issues with Minix FS:
+<br>
+<br>- block addresses are stored in 16 bit integers, can address only 64K blocks:
+<br>
+<br> >>> pow(2,16) = 65,536 ( = 64K)
+<br> so max. size for the FS = 64K x 1K (one K bytes per block) = 64 MB
+<br> max. file size = 64MB
+<br>
+<br>- the maximal file name is 14 characters
+<br>
+<br>Solutions:
+<br>   VFS (Virtual File System) Layer - Chris and Linus wrote it
+<br>  Ext FS (Extended File System)   - Apr 1992 - Linux ver 0.96c --Rémy Card
+<br>  Ext2 FS (Second Extended File System) - Rémy Card, 1993
+<br>  Ext3 FS (Third Extended File System) (Linux ver  2.4.15 onwards) -- Dr. Stephen C. Tweedie
+<br>  Ext4 FS (Fourth Extended File System) (Linux ver 2.6.19)   --  Theodore Tso (MIT)
+<br>
+</div>
+
+<div class='slide'>
+<h2>Ext FS (Extended File System)   - Apr 1992 - Linux ver 0.96c --Rémy Card</h2>
+<p>
+<br>
+
+<br>- Max. filesystem size: 2GB
+<br>- Max  file size: 2GB
+<br>- Max  file name: 255 chars
+<br>- Fixed block size
+<br>
+<br>Big improvment over Minix FS
+<br>
+<br>Issues:
+<br>
+<br>- no support for:
+<br>      data modification timestamps
+<br>
+<br>- bad performance:
+<br>     linked lists was used to keep track of free blocks and inodes
+<br>     after usage: lists became unsorted and the filesystem became fragmented
+<br>
+</p>
+</div>
+
+
+<div class='slide'>
+<h2>Ext2 FS (Rémy Card, 1993)</h2>
+<p>
+
+<br>Goal: Provide a powerful FS with Unix file semantics and offer advanced features and great performance
+<br>robust ( low risk of data loss) - fit for intensive use
+<br>extensions to allow using new features w/o reformating the fs
+<br>
+<br>
+<br>- Max. filesystem size: 2TB ( 4TB after VFS code upgrade) - Can use big disks w/o the need of creating many partitions
+<br>- Max  file size: 2GB
+<br>- Max  file name: 255 chars ( can be 1012 if required)
+<br>- Variable block size
+<br>- supports (regular files, dirs, device special files and symlinks)
+<br>- reserves 5% blocks for su (root) to allow root to recover easily from situations where user has filled up the fs
+<br>
+<br>- based on the Ext fs code with many reorganizations and many improvements
+<br>- designed with evolution in mind and contained space for future improvements
+</p>
+</div>
+
+<div class='slide'>
+<h2>Ext2 FS contd...</h2>
+<p>advanced:
+ <br> User can set the attribs on a file or dir. New files in that dir can inherit those attribs.
+<br>  <b>mount options</b>: allow the root to chose file creation semantics
+<br>  BSD like <b>sync update</b> avaiable via mount option ( meta data objects: inodes, bitmap blocks, indirect blocks and dir blocks can be written to the disk synchronosuly)
+<br>  -- expensive op
+<br>  <b>Variable block size</b>: root can select logical block size (usually 1K, 2K and 4K)
+<br>	</b>bigger blocks</b>: fewer IOs, speed up I/O but may waster disk space (bigger buckets!)
+<br>
+<br>  <b>fast symlink</b>: target name is stored in the inode itself - make it fast for the kernel
+<br>                but inode space avl is limited, so there is a limit for th target name: 60 chars
+<br>
+<br>  <b>fs state</b> is tracked in a spl field in the superblock (Not Clean -- r/w, ro mode: Clean, onErrors: Erroneous)
+<br>     fsck uses this info to decide on fs checking
+<br>
+<br>   <b>mount count</b> is maintained: when mount_count reaches a max value, fsck forces check even if the state=="Clean"
+<br>   last_check_time and max_check_interval also store in the superblock of fs.
+
+</p>
+</div>
+
+
+<div class='slide'>
+<h2>Ext2 FS contd...</h2>
+<p>
+ <br>attribute for secure deletion:
+   <br>          User can request secure deletion on her/his files
+   <br>          when that file is deleted, random data is written in the data blocks previously allocated to that file.
+            This prevents bad guys from gaining access to the prev content by tools like disk editor
+<br>
+<br>
+<br>     Immutable files: r/o files, nobody can delete them -- to protect sensitive config files.
+ <br>    Append only a/o files: data can be added only at EOF, cannot be deleted or renamed  -- useful for log files
+
+</p>
+</div>
+
+
+<div class='slide'>
+<h2>Ext2 FS contd...</h2>
+<p>
+<br><b>Physical structure:</b>
+<br>  Influenced by BSD fs:
+<br>   fs  made up of block groups
+<br>    The physical structure of a filesystem is represented as:<br>
+<br>     Boot Sector --  Block Group-1  --  Block Group-2  ... --  Block Group-N
+<br>    
+<br> Block group:
+<br>
+<br> - contains a redundant copy of crucial filesystem control info: (superblock and the fs descriptors) 
+<br>  - part of the filesystem (a block bitmap, an inode bitmap, a piece of the inode table, and data blocks)
+<br> 
+<br> <b>Structure</b>:
+ <br>     Superblock  -- FS Descriptor -- Block Bitmap -- Inode Bitmap -- inode table -- data blocks
+<br> 
+ <br>    Reliablity: this provides replication of the control structures - makes easy to recover from a fs where superblock is corrupted
+  <br>   Perf: this reduces the distance between inode table and data blocks
+
+</p>
+</div>
+
+<div class='slide'>
+<h2>Ext2 FS contd...</h2>
+<p>
+
+<br><b>What is a Superblock</b>:
+<br>Superblock is used to store the metadata of the FS:
+<br>File system type
+<br>Size
+<br>Status
+<br>Information about other metadata structures
+<br>Linux maintains multiple redundant copies of the superblock in every file system. 
+<span class='code'>
+<br># on a Ext4 FS
+<br>$ sudo dumpe2fs /dev/sda6 | grep -i superbloc 
+<br>dumpe2fs 1.41.11 (14-Mar-2010)
+<br>  Primary superblock at 0, Group descriptors at 1-3
+<br>  Backup superblock at 32768, Group descriptors at 32769-32771
+<br>  Backup superblock at 98304, Group descriptors at 98305-98307
+<br>  Backup superblock at 163840, Group descriptors at 163841-163843
+<br>  Backup superblock at 229376, Group descriptors at 229377-229379
+<br>  Backup superblock at 294912, Group descriptors at 294913-294915
+<br>  Backup superblock at 819200, Group descriptors at 819201-819203
+<br>  Backup superblock at 884736, Group descriptors at 884737-884739
+<br>  Backup superblock at 1605632, Group descriptors at 1605633-1605635
+<br>  Backup superblock at 2654208, Group descriptors at 2654209-2654211
+<br>  Backup superblock at 4096000, Group descriptors at 4096001-4096003
+<br>  Backup superblock at 7962624, Group descriptors at 7962625-7962627
+</span>
+</p>
+</div>
+
+<div class='slide'>
+<h2>Ext2 FS contd...</h2>
+<p>
+<br>
+Dir:
+<br>   Dirs are managed as linked list of variable length entries - to enable implement long file name without wasting disk space
+<br>   Each entry: inode number -- entry length -- name length -- filename
+<br>   eg:
+<br>                123434      --  16          -- 05          -- file1
+<br>                342344      --  40          -- 14          -- long_file_name
+<br>                545344      --  12          -- 02          -- f2
+<br>
+<br>
+<br>Perf optimizations:
+<br> - Buffer cache mgmt is used to perform readaheads: when a block to be read, the kernel requests the I/O on serveral contiguous blocks
+<br>   So that next block to read will be already loaded into the buffer cache.
+<br>
+<br> - Allocation optimizations: Block groups cluster together related inodes and data: kernel tries to allocate data blocks for a file in the same block group as its inode.
+<br>   This reduces the disk head seeks made when the kernel reads an inode and its data blocks.
+<br>
+<br>
+<br> - Preallocates upto 8 adjacent blocks when allocating a new block to acheive good write performances under heavy load
+<br>
+</p>
+</div>
+<div class='slide'>
+<h2>Ext2 FS contd...</h2>
+<p>
+
+<b> tools:</b>
+<br>    tune2fs part ofe2fsprogs package  (adjust  tunable  filesystem  parameters [max_mount_count,max_check_interval, num_blocks_reserved_for_su] on  ext2/ext3/ext4  filesystems)
+<span class='code'>
+        <br>     # on a ext4 fs:
+	<br>  	sudo tune2fs -l /dev/sda6
+         <br>  		 
+	<br>  	tune2fs 1.41.11 (14-Mar-2010)
+	<br>  	Filesystem volume name:   <none>
+	<br>  	Last mounted on:          /
+	<br>  	Filesystem UUID:          de896090-2a7b-4804-bd61-3988087dcbd3
+	<br>  	Filesystem magic number:  0xEF53
+	<br>  	Filesystem revision #:    1 (dynamic)
+	<br>  	Filesystem features:      has_journal ext_attr resize_inode dir_index filetype needs_recovery extent flex_bg sparse_super large_file huge_file uninit_bg dir_nlink extra_isize
+	<br>  	Filesystem flags:         signed_directory_hash 
+	<br>  	Default mount options:    (none)
+	<br>  	Filesystem state:         clean
+	<br>  	Errors behavior:          Continue
+	<br>  	Filesystem OS type:       Linux
+	<br>  	Inode count:              2523136
+	<br>  	Block count:              10082779
+	<br>  	Reserved block count:     504138
+</span>
+</p>
+</div>
+
+<div class='slide'>
+<h2>Ext2 FS contd...</h2>
+<p>
+<span class='code'>
+	<br>  	Free blocks:              1384853
+	<br>  	Free inodes:              1729932
+	<br>  	First block:              0
+	<br>  	Block size:               4096
+	<br>  	Fragment size:            4096
+	<br>  	Reserved GDT blocks:      1021
+	<br>  	Blocks per group:         32768
+	<br>  	Fragments per group:      32768
+	<br>  	Inodes per group:         8192
+	<br>  	Inode blocks per group:   512
+	<br>  	Flex block group size:    16
+	<br>  	Filesystem created:       Fri Mar 12 21:53:27 2010
+	<br>  	Last mount time:          Mon Nov  8 11:33:00 2010
+	<br>  	Last write time:          Wed Nov  3 19:10:43 2010
+	<br>  	Mount count:              2
+	<br>  	Maximum mount count:      26
+	<br>  	Last checked:             Wed Nov  3 19:10:43 2010
+	<br>  	Check interval:           15552000 (6 months)
+	<br>  	Next check after:         Mon May  2 19:10:43 2011
+	<br>  	Lifetime writes:          494 GB
+	<br>  	Reserved blocks uid:      0 (user root)
+        <br>  		Reserved blocks gid:      0 (group root)
+	<br>  	First inode:              11
+</span>
+</p>
+</div>
+
+<div class='slide'>
+<h2>Ext2 FS contd...</h2>
+<p>
+<span class='code'>
+	<br>  	Inode size:	          256
+	<br>  	Required extra isize:     28
+	<br>  	Desired extra isize:      28
+	<br>  	Journal inode:            8
+	<br>  	First orphan inode:       14619
+	<br>  	Default directory hash:   half_md4
+	<br>  	Directory Hash Seed:      f9efbc46-05db-49c3-964d-526a4f345f25
+	<br>  	Journal backup:           inode blocks
+
+</span>
+</p>
+</div>
+
+
+<div class='slide'>
+<h2>Ext2 FS contd...</h2>
+<p>
+
+<br>Issues:
+<br>
+<br>- no support for:
+<br>      Journaling  
+<br>      too long fsck
+<br>      500GB - mkfs takes 3-4 hrs
+<br>      small file efficiency not good (vs reiserfs)
+<br>      directory scalability is not as good as (XFS)
+<br>
+<br>Solutions: 
+<br>  Ext3 FS (Third Extended File System) (Linux ver  2.4.15 onwards) -- Dr. Stephen C. Tweedie
+<br>  Ext4 FS (Fourth Extended File System) (Linux ver 2.6.19)   --  Theodore Tso (MIT)
+</p>
+</div>
+
+<div class='slide'>
+<h2>Ext3 fs ( version  2.4.15 onwards) -- Dr. Stephen C. Tweedie</h2>
+<p> Limits:
+	<br>Max file size	16 GB – 2 TB
+	<br>Max number of files	Variable, allocated at creation time 
+	<br>Max filename length	254 bytes 
+	<br>Max volume size	2 TB – 16 TB
+<br>
+ <br> ext2 filesystem with a journal file ((which is a dedicated circular log on a contiguous region of the disk). Actual changes to the physical storage are then performed from the log, which can more reliably implement the changes and ensure consistency, even if the system crashes or power is lost during the operation. The result is a reduced chance of file system corruption.
+<br>
+ <br> avoids file system corruption by maintaining the journal
+ <br> makes it fault-resilient file system
+<br>
+ 
+ <br> The journaling capability ==  no more waiting for fsck's or worrying about metadata corruption
+ <br> improving the availability --able to reboot the machine instantly and have everything nice and consistent
+   
+</p>
+</div>
+
+<div class='slide'>
+<h2>Ext3 FS contd...</h2>
+<p>
+<span class='code'>
+ <br> # convert  ext2 partition to ext3:
+  <br>$ sudo tune2fs -j /dev/hdaX
+</span>
+<br>
+  <br> three types of journaling (writeback, ordered, and data) but uses <b>ordered</b> as the default mode.
+
+  <br> <b>Writeback</b>:
+  <br> only the metadata is journaled, and the data blocks are written directly to their location on the disk. This preserves the file system structure and avoids corruption, but data corruption can occur (for example, if the system crashes after the metadata is journaled but before the data block is written)
+
+  <br><b> Ordered mode</b>:
+  <br>  metadata journaling only mode but writes the data before journaling the metadata. In this way, data and file system are guaranteed consistent after a recovery. 
+
+  <br><b> Data mode</b>:both metadata and data are journaled. This mode offers the greatest protection against file system corruption and data loss but can suffer from performance degradation, as all data is written twice (first to the journal, then to the disk).
+
+</p>
+</div>
+
+<div class='slide'>
+<h2>Ext3 FS contd...</h2>
+<p>
+  <br><b>Issues</b>:
+   <br>It was not designed from the ground up as a journaling file system. Being based on ext2fs, it lacks some of the more recent advanced features found in other journaling file systems (such as extents). It also typically scores worse in performance when compared to ReiserFS, JFS, and XFS but requires less CPU and memory than competing solutions.
+  <br>
+  <br>subdirectories limited to 32KB
+  <br>Files were allocated using a bit map of free space, which was not very fast nor very scalable. 
+  <br>Ext3's format is very efficient for small files but horribly inefficient for large files.
+</p>
+</div>
+
+<div class='slide'>
+<h2>Tracking the free space</h2>
+<p>
+  <br>
+  <br>To make the allocation and freeing of blocks fast, the filesystem needs an efficient way to keep track of free space.
+  <br>
+  <br>Bitmaps:
+  <br>	array of bits, with the Nth bit indicating whether the Nth block is allocated or free. 
+  <br>	1 bit per block.  For a 4K blocksize, that's 1/(4096*8) = 0.003%.  (The 8 comes from 8 bits per byte.) For a 1GB filesystem, the bitmap is 32KB
+  <br>	For a 1TB filesystem, the bitmap is 32MB  - stuffable in memory
+  <br>	1PB filesystem, the bitmap is 32GB, and that simply won't fit in memory on most machines. 
+  <br>	--this doesn't scale.
+  <br>	solution:
+  <br>
+  <br>	for a 1PB filesystem using 4K blocks, the free space can be divided into a million bitmaps, each 32KB in size.  
+  <br>
+  <br>	The bitmap(s) must be updated not only when a new block is allocated, but also when an old block is freed.  
+  <br>	With the 1PB filesystem example, in the worst case, removing 4GB of data (a million 4K blocks) could require each of the million bitmaps to be read, modified, and written out again.  
+  <br>
+</p>
+</div>
+
+<div class='slide'>
+<h2>Tracking the free space contd.</h2>
+<p>
+  
+B-trees:
+ <br> extent is a contiguous region of free space described by two integers: offset and length.
+ <br> B-tree sorts the extents by offset so that contiguous space allocation is efficient.
+ <br> B-trees of extents suffer the same pathology as bitmaps when confronted with random frees.
+<br>
+<br>Deferred frees
+<br>
+<br>	One way to mitigate the pathology of random frees is to defer the update of the bitmaps or B-trees, and instead keep a list of recently freed blocks.  When this deferred free list reaches a certain size, it can be sorted, in memory, and then freed to the underlying bitmaps or B-trees with somewhat better locality.  Not ideal, but it helps.
+<br>
+</p>
+</div>
+
+<div class='slide'>
+<h2>Tracking the free space contd.</h2>
+<p>
+<b>Space maps ( ZFS )</b>
+ <br>-The space map is simply a log of allocations and frees, in time order. 
+ <br> Basic Idea:
+ <br> Instead of periodically folding a transaction log back into the filesystem,  the transaction log be the filesystem?
+<br>==>
+<br>  instead of folding it into a bitmap or B-tree, the deferred free list be the free space representation?
+<br>
+<br>For example: ZFS divides the space on each virtual device into a few hundred regions called metaslabs.
+<br>Each metaslab has an associated space map, which describes that metaslab's free space. 
+<br>The space map is simply a log of allocations and frees, in time order. 
+<br>Space maps make random frees just as efficient as sequential frees, because regardless of which extent is being freed, it's represented on disk by appending the extent (a couple of integers) to the space map object -- and appends have perfect locality.  Allocations, similarly, are represented on disk as extents appended to the space map object (with, of course, a bit set indicating that it's an allocation, not a free).
+</p>
+</div>
+
+<div class='slide'>
+<h2>Ext4 fs (since version  2.6.19  --  Theodore Tso  - MIT, now Google)</h2>
+<p>
+ <br> An evolution of ext3fs
+ <br> We can mount an ext4fs partition as ext3fs or vice versa
+ <br> ext4fs is a 64-bit file system and is designed to support very large volumes (1 exabyte)
+ <br> designed to use extents, but if this is used, then compatibility with ext3fs is lost
+ <br> Replacing indirect blocks with extents
+ <br>  An extent is a single descriptor for a range of contiguous blocks (a efficient way to represent large file, Better CPU utilization, fewer metadata IOs)
+ <br> Ext4 replaces ext3's mechanism with extents to improve allocation and support a more efficient storage structure. 
+  <br> instead of maintaining information about where a block is stored, the extent maintains information about where a long list of contiguous blocks is stored (thus reducing the overall metadata storage).
+<br>
+
+ <br> includes delayed allocation to allocate blocks on the disk only when needed (which reduces fragmentation)
+<br>  the contents of the journal are also checksummed to make the journal more reliable
+ <br> Uses a variation of the B tree, called the H tree, which allows much larger subdirectories 
+<br>
+ <br> nanosecond based timestamps
+
+</p>
+</div>
+
+<div class='slide'>
+<h2>Ext4 fs contd.</h2>
+<p>
+<br>File-level preallocation  -  preallocates and initializes a file of a given size
+<br>Multi-block allocation
+<br>
+<br>Even with journaling, corruption is still possible if erroneous entries find their way into the journal. To combat this, ext4 implements checksumming of the journal to ensure that valid changes make their way to the underlying file system. 
+<br>
+<br>
+<br>
+<br>Limits
+<br>	Max file size	16 TB (for 4k block filesystem)
+<br>	Max number of files	4 billion (specified at filesystem creation time)
+<br>	Max filename length	256 bytes
+<br>	Max volume size	1 EB (currently limited to 16TB because of e2fsprogs limitation)
+ 
+</p>
+</div>
+
+<div class='slide'>
+<h2>Ext4 fs contd.</h2>
+<p>
+ <img src='./img/extentTree.png'/>
+</p>
+</div>
+
+<div class='slide'>
+<h2>Ext4 fs contd.</h2>
+<p>
+ <img src='./img/ext4_extentMap.png'/>
+</p>
+</div>
+<div class='slide'>
+<h2>Btrfs (Btree fs) -- Chris Mason - Oracle</h2>
+<p>
+Will be the next FS for Linux.
+
+<br>
+<br>Limits
+<br>	Max file size	16 EB
+<br>	Max number of files	2^64
+<br>	Max filename length	255 bytes
+<br>	Max volume size	16 EB
+<br>has:
+
+<br>Online volume growth and shrinking
+<br>Online block device addition and removal
+<br>Online defragmentation
+<br>Online balancing (movement of objects between block devices to balance load)
+<br>Transparent compression (currently zlib)
+<br>Subvolumes (separately-mountable filesystem roots)
+<br>Snapshots (writeable, copy-on-write copies of subvolumes)
+<br>File cloning (copy-on-write on individual files, or byte ranges thereof)
+<br>Object-level (RAID1-like) mirroring, (RAID0-like) striping
+<br>Checksums on data and metadata (currently CRC-32C[13])
+<br>In-place conversion (with rollback) from ext3/4 to Btrfs[14]
+<br>File system seeding (Btrfs on read-only storage used as a copy-on-write backing for a writeable Btrfs)
+<br>User-defined transactions
+<br>Block discard support (reclaims space on some virtualization setups or improves wear leveling on SSDs by notifying the underlying device that storage is no longer in use)
+ <br>
+</p>
+</div>
+
+<div class='slide'>
+<h2>Btrfs (Btree fs)  contd. </h2>
+<p>
+<br>Will have:
+<br>Object-level (RAID5-like and RAID6-like) parity-based striping
+<br>Online and offline filesystem check
+<br>Incremental dumps
+<br>Data deduplication 
+</p>
+</div>
+
+<div class='slide'>
+<h2>ZFS (Sun/Oracle) </h2>
+<p>
+Limits:
+<br>Max file size	16 EB (2^64 bytes)
+<br>Max number of files	2^48
+<br>Max filename length	255 bytes
+<br>Max volume size	16 EB
+
+<br>Features:
+<br>
+<br>Every read checksummed
+<br>Dynamic pool allocation/increase
+<br>IO performance guarantees/scheduling
+<br>Trivial FS creation/management
+<br>Snapshots and trivially replicated snapshots
+<br>No more partitions
+<br>Pools have disks and a RAID strategy
+<br>Filesystems are in pools
+
+
+</p>
+</div>
+
+
+<div class='slide'>
+<h2>ZFS contd. </h2>
+<p>
+<br><b>Copy-on-write transactional model</b>
+<br>ZFS uses a copy-on-write transactional object model. All block pointers within the filesystem contain a 32-bit checksum or 256-bit hash (currently a choice between Fletcher-2, Fletcher-4, or SHA-256)[16] of the target block which is verified when the block is read. Blocks containing active data are never overwritten in place; instead, a new block is allocated, modified data is written to it, then any metadata blocks referencing it are similarly read, reallocated, and written. To reduce the overhead of this process, multiple updates are grouped into transaction groups, and an intent log is used when synchronous write semantics are required. The blocks are arranged in a tree, as are their checksums.
+<br>
+<br>
+<br><b>Snapshots and clones</b>
+<br>An advantage of copy-on-write is that when ZFS writes new data, the blocks containing the old data can be retained, allowing a snapshot version of the file system to be maintained. ZFS snapshots are created very quickly, since all the data composing the snapshot is already stored; they are also space efficient, since any unchanged data is shared among the file system and its snapshots.
+<br>Writeable snapshots ("clones") can also be created, resulting in two independent file systems that share a set of blocks. As changes are made to any of the clone file systems, new data blocks are created to reflect those changes, but any unchanged blocks continue to be shared, no matter how many clones exist.
+
+
+</p>
+</div>
+
+<div class='slide'>
+<h2>ZFS contd. </h2>
+<p>
+<br><b>built-in deduplication(process of eliminating duplicate copies of data)</b>
+<br>	 file-level, block-level, or byte-level
+<br>  - checksummed using some hash function that uniquely identifies data with very high probability (like SHA256)
+<br>  -  probability of a hash collision is about 2^-256 = 10^-77
+<br>  <b>File-level</b> assigns a hash signature to an entire file. 
+<br>   Any change to any block in the file requires recomputing the checksum of the whole file, which means that if even one block changes, any space savings is lost because the two versions of the file are no longer identical. This is fine when the expected workload is something like JPEG or MPEG files, but is completely ineffective when managing things like virtual machine images, which are mostly identical but differ in a few blocks.
+<br>
+<br><b>Block-level dedup </b> has somewhat higher overhead.
+<br>
+<br><b>Byte-level dedup</b>  is in principle the most general, but it is also the most costly
+<br><br>
+ZFS provides block-level deduplication because this is the finest granularity that makes sense for a general-purpose storage system. 
+<br>
+ 
+</p>
+</div>
+
+<div class='slide'>
+<h2>Hashing  - Message digests - MD5 and SHA256 </h2>
+
+<p class='code'>
+<br>>>> import hashlib
+<br>
+<br>>>> md5 = hashlib.md5()
+<br>>>> md5.update('This is data in the data block')
+<br>>>> md5.hexdigest()
+<br>'884293d56a93f0eacd452bab3cbf774f'
+<br>>>> len(md5.hexdigest())
+<br>32
+<br>>>> len(md5.hexdigest())/2
+<br>16
+<br>>>> sha256 = hashlib.sha256()
+<br>>>> sha256.update('This is data in the data block')
+<br>>>> sha256.hexdigest()
+<br>'771b71f9a31a17d6b8ec7b7b11c948d4dddd0fc534f576f344a5181b09b2fad6'
+<br>>>> len(sha256.hexdigest())
+<br>64
+<br>>>> len(sha256.hexdigest())/2
+<br>32
+
+</p>
+</div>
+
+
+
+
+      </div> <!-- slides --> 
+ 
+    </div> <!-- presentation --> 
+ 
+    <script> 
+      (function() {
+        var doc = document;
+        var disableBuilds = true;
+ 
+        var ctr = 0;
+        var spaces = /\s+/, a1 = [''];
+ 
+        var toArray = function(list) {
+          return Array.prototype.slice.call(list || [], 0);
+        };
+ 
+        var byId = function(id) {
+          if (typeof id == 'string') { return doc.getElementById(id); }
+          return id;
+        };
+ 
+        var query = function(query, root) {
+          if (!query) { return []; }
+          if (typeof query != 'string') { return toArray(query); }
+          if (typeof root == 'string') {
+            root = byId(root);
+            if(!root){ return []; }
+          }
+ 
+          root = root || document;
+          var rootIsDoc = (root.nodeType == 9);
+          var doc = rootIsDoc ? root : (root.ownerDocument || document);
+ 
+          // rewrite the query to be ID rooted
+          if (!rootIsDoc || ('>~+'.indexOf(query.charAt(0)) >= 0)) {
+            root.id = root.id || ('qUnique' + (ctr++));
+            query = '#' + root.id + ' ' + query;
+          }
+          // don't choke on something like ".yada.yada >"
+          if ('>~+'.indexOf(query.slice(-1)) >= 0) { query += ' *'; }
+ 
+          return toArray(doc.querySelectorAll(query));
+        };
+ 
+        var strToArray = function(s) {
+          if (typeof s == 'string' || s instanceof String) {
+            if (s.indexOf(' ') < 0) {
+              a1[0] = s;
+              return a1;
+            } else {
+              return s.split(spaces);
+            }
+          }
+          return s;
+        };
+ 
+        var addClass = function(node, classStr) {
+          classStr = strToArray(classStr);
+          var cls = ' ' + node.className + ' ';
+          for (var i = 0, len = classStr.length, c; i < len; ++i) {
+            c = classStr[i];
+            if (c && cls.indexOf(' ' + c + ' ') < 0) {
+              cls += c + ' ';
+            }
+          }
+          node.className = cls.trim();
+        };
+ 
+        var removeClass = function(node, classStr) {
+          var cls;
+          if (classStr !== undefined) {
+            classStr = strToArray(classStr);
+            cls = ' ' + node.className + ' ';
+            for (var i = 0, len = classStr.length; i < len; ++i) {
+              cls = cls.replace(' ' + classStr[i] + ' ', ' ');
+            }
+            cls = cls.trim();
+          } else {
+            cls = '';
+          }
+          if (node.className != cls) {
+            node.className = cls;
+          }
+        };
+ 
+        var toggleClass = function(node, classStr) {
+          var cls = ' ' + node.className + ' ';
+          if (cls.indexOf(' ' + classStr.trim() + ' ') >= 0) {
+            removeClass(node, classStr);
+          } else {
+            addClass(node, classStr);
+          }
+        };
+ 
+        var ua = navigator.userAgent;
+        var isFF = parseFloat(ua.split('Firefox/')[1]) || undefined;
+        var isWK = parseFloat(ua.split('WebKit/')[1]) || undefined;
+        var isOpera = parseFloat(ua.split('Opera/')[1]) || undefined;
+ 
+        var canTransition = (function() {
+          var ver = parseFloat(ua.split('Version/')[1]) || undefined;
+          // test to determine if this browser can handle CSS transitions.
+          var cachedCanTransition = 
+            (isWK || (isFF && isFF > 3.6 ) || (isOpera && ver >= 10.5));
+          return function() { return cachedCanTransition; }
+        })();
+ 
+        //
+        // Slide class
+        //
+        var Slide = function(node, idx) {
+          this._node = node;
+          if (idx >= 0) {
+            this._count = idx + 1;
+          }
+          if (this._node) {
+            addClass(this._node, 'slide distant-slide');
+          }
+          this._makeCounter();
+          this._makeBuildList();
+        };
+ 
+        Slide.prototype = {
+          _node: null,
+          _count: 0,
+          _buildList: [],
+          _visited: false,
+          _currentState: '',
+          _states: [ 'distant-slide', 'far-past',
+                     'past', 'current', 'future',
+                     'far-future', 'distant-slide' ],
+          setState: function(state) {
+            if (typeof state != 'string') {
+              state = this._states[state];
+            }
+            if (state == 'current' && !this._visited) {
+              this._visited = true;
+              this._makeBuildList();
+            }
+            removeClass(this._node, this._states);
+            addClass(this._node, state);
+            this._currentState = state;
+ 
+            // delay first auto run. Really wish this were in CSS.
+            /*
+            this._runAutos();
+            */
+            var _t = this;
+            setTimeout(function(){ _t._runAutos(); } , 400);
+          },
+          _makeCounter: function() {
+            if(!this._count || !this._node) { return; }
+            var c = doc.createElement('span');
+            c.innerHTML = this._count;
+            c.className = 'counter';
+            this._node.appendChild(c);
+          },
+          _makeBuildList: function() {
+            this._buildList = [];
+            if (disableBuilds) { return; }
+            if (this._node) {
+              this._buildList = query('[data-build] > *', this._node);
+            }
+            this._buildList.forEach(function(el) {
+              addClass(el, 'to-build');
+            });
+          },
+          _runAutos: function() {
+            if (this._currentState != 'current') {
+              return;
+            }
+            // find the next auto, slice it out of the list, and run it
+            var idx = -1;
+            this._buildList.some(function(n, i) {
+              if (n.hasAttribute('data-auto')) {
+                idx = i;
+                return true;
+              }
+              return false;
+            });
+            if (idx >= 0) {
+              var elem = this._buildList.splice(idx, 1)[0];
+              var transitionEnd = isWK ? 'webkitTransitionEnd' : (isFF ? 'mozTransitionEnd' : 'oTransitionEnd');
+              var _t = this;
+              if (canTransition()) {
+                var l = function(evt) {
+                  elem.parentNode.removeEventListener(transitionEnd, l, false);
+                  _t._runAutos();
+                };
+                elem.parentNode.addEventListener(transitionEnd, l, false);
+                removeClass(elem, 'to-build');
+              } else {
+                setTimeout(function() {
+                  removeClass(elem, 'to-build');
+                  _t._runAutos();
+                }, 400);
+              }
+            }
+          },
+          buildNext: function() {
+            if (!this._buildList.length) {
+              return false;
+            }
+            removeClass(this._buildList.shift(), 'to-build');
+            return true;
+          },
+        };
+ 
+        //
+        // SlideShow class
+        //
+        var SlideShow = function(slides) {
+          this._slides = (slides || []).map(function(el, idx) {
+            return new Slide(el, idx);
+          });
+          var h = window.location.hash;
+          try {
+            this.current = parseInt(h.split('#slide')[1], 10);
+          } catch (e) { /* squeltch */ }
+          this.current = isNaN(this.current) ? 1 : this.current;
+          var _t = this;
+          doc.addEventListener('keydown', 
+              function(e) { _t.handleKeys(e); }, false);
+          doc.addEventListener('mousewheel', 
+              function(e) { _t.handleWheel(e); }, false);
+          doc.addEventListener('DOMMouseScroll', 
+              function(e) { _t.handleWheel(e); }, false);
+          doc.addEventListener('touchstart', 
+              function(e) { _t.handleTouchStart(e); }, false);
+          doc.addEventListener('touchend', 
+              function(e) { _t.handleTouchEnd(e); }, false);
+          window.addEventListener('popstate', 
+              function(e) { if (e.state) { _t.go(e.state); } }, false);
+          this._update();          
+        };
+ 
+        SlideShow.prototype = {
+          _slides: [],
+          _update: function(dontPush) {
+            document.querySelector('#presentation-counter').innerText = this.current;
+            if (history.pushState) {
+              if (!dontPush) {
+                history.replaceState(this.current, 'Slide ' + this.current, '#slide' + this.current);
+              }
+            } else {
+              window.location.hash = 'slide' + this.current;
+            }
+            for (var x = this.current-1; x < this.current + 7; x++) {
+              if (this._slides[x-4]) {
+                this._slides[x-4].setState(Math.max(0, x-this.current));
+              }
+            }
+          },
+ 
+          current: 0,
+          next: function() {
+            if (!this._slides[this.current-1].buildNext()) {
+              this.current = Math.min(this.current + 1, this._slides.length);
+              this._update();
+            }
+          },
+          prev: function() {
+            this.current = Math.max(this.current-1, 1);
+            this._update();
+          },
+          go: function(num) {
+            this.current = num;
+            this._update(true);
+          },
+ 
+          _notesOn: false,
+          showNotes: function() {
+            var isOn = this._notesOn = !this._notesOn;
+            query('.notes').forEach(function(el) {
+              el.style.display = (notesOn) ? 'block' : 'none';
+            });
+          },
+          switch3D: function() {
+            toggleClass(document.body, 'three-d');
+          },
+          handleWheel: function(e) {
+            var delta = 0;
+            if (e.wheelDelta) {
+              delta = e.wheelDelta/120;
+              if (isOpera) {
+                delta = -delta;
+              }
+            } else if (e.detail) {
+              delta = -e.detail/3;
+            }
+ 
+            if (delta > 0 ) {
+              this.prev();
+              return;
+            }
+            if (delta < 0 ) {
+              this.next();
+              return;
+            }
+          },
+          handleKeys: function(e) {
+            
+            if (/^(input|textarea)$/i.test(e.target.nodeName)) return;
+            
+            switch (e.keyCode) {
+              case 37: // left arrow
+                this.prev(); break;
+              case 39: // right arrow
+              case 32: // space
+                this.next(); break;
+              case 50: // 2
+                this.showNotes(); break;
+              case 51: // 3
+                this.switch3D(); break;
+            }
+          },
+          _touchStartX: 0,
+          handleTouchStart: function(e) {
+            this._touchStartX = e.touches[0].pageX;
+          },
+          handleTouchEnd: function(e) {
+            var delta = this._touchStartX - e.changedTouches[0].pageX;
+            var SWIPE_SIZE = 150;
+            if (delta > SWIPE_SIZE) {
+              this.next();
+            } else if (delta< -SWIPE_SIZE) {
+              this.prev();
+            }
+          },
+        };
+ 
+        // Initialize
+        var slideshow = new SlideShow(query('.slide'));
+      })();
+    </script> 
+ 
+    <!--[if lt IE 9]>
+    <script 
+      src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">
+    </script>
+		<script>CFInstall.check({ mode: "overlay" });</script>
+    <![endif]--> 
+    
+    <script> 
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-15028909-5']);
+      _gaq.push(['_trackPageview']);
+ 
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+    </script> 
+  </body> 
+</html>
