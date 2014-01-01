@@ -1,10 +1,117 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<title>Flowchart</title>
+  <meta charset="UTF-8">
+  <title> Flow Diagram</title>
+  <script src="https://github.com/DmitryBaranovskiy/raphael/raw/master/raphael-min.js"></script>
+ <link href="https://fonts.googleapis.com/css?family=Architects+Daughter" rel="stylesheet" type="text/css">
+<script src='http://adrai.github.io/flowchart.js/flowchart-latest.js'></script>
+
+    <script src="http://d1n0x3qji82z53.cloudfront.net/src-min-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<style>
+        #editor { 
+                top: 50px;
+                width:600px;
+                height:200px;
+                left: 700px;
+                border-radius:10px;
+                
+            }
+h3 {
+font-family: 'Architects Daughter', 'Helvetica Neue', Helvetica, Arial, serif;
+font-size: 18px;
+font-weight: bold;
+margin-bottom: 8px;
+color: #474747;
+}
+
+body {
+ padding:10px;
+}
+
+textarea {
+  border-radius:10px;
+  padding:10px;
+
+}
+
+</style>
+
 </head>
 <body>
-  <p>Flowchart</p>	
+
+<h3>Flow Charting</h3>
+
+
+
+<textarea id="data" name="data" rows="10" cols="80">
+
+st=>start
+e=>end
+
+op0=>operation: User
+
+op1=>operation: Service Provider
+
+sub1=>subroutine:  ID Provider
+
+cond=>condition: Authorized? 
+
+io=>inputoutput: Provide Service...
+
+st->op0->op1->cond
+cond(yes)->io->e
+cond(no)->sub1->op1
+</textarea>
+
+<h3>SAML (Security Assertion Markup Language) in Action
+<div id="diagram"></div>
+<script>
+//source: http://adrai.github.io/flowchart.js/
+
+var options = {
+    'line-width': 2,
+    'line-length': 50,
+    'text-margin': 10,
+    'font-size': 12,
+    'font-color': 'black',
+    'line-color': 'gray',
+    'element-color': '#234',
+    'fill': '#99ccff',
+    'yes-text': 'yes',
+    'no-text': 'no',
+    'arrow-end': 'block'
+};
+
+
+
+$(document).ready( function() {
+var editor = ace.edit("editor");
+editor.setTheme("ace/theme/monokai");
+editor.getSession().setMode("ace/mode/javascript");
+ 
+  var diagram = flowchart.parse( $('#data').val() );
+  diagram.drawSVG("diagram",options );
+   
+ $('#data').change( function() {
+  $('#diagram').html('');
+  diagram = flowchart.parse( $('#data').val() );
+  diagram.drawSVG("diagram", options);
+ });
+
+
+});
+</script>
+
+<div id="editor">
+        function foo(items) {
+            var x = "All this is syntax highlighted";
+            return x;
+        }
+</div>
+ 
+  
 </body>
 </html>
+

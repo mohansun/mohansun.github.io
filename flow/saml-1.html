@@ -27,6 +27,13 @@ margin-bottom: 8px;
 color: #474747;
 
 }
+#diagram {
+
+border:2px solid #99ccff;
+border-radius:10px;
+padding:10px;
+box-shadow: 3px 3px 3px #99ccff;
+}
 </style>
 
 
@@ -35,19 +42,22 @@ color: #474747;
 <h3>SAML (Security Assertion Markup Lanugage)</h3>
 
 <textarea id="data" name="data" rows="10" cols="120">
-  Title: SAML (Security Assertion Markup Lanugage) Single-Sign-On (SSO) - Browser Based 
-  User->UserAgent:  Request
-  UserAgent->ServiceProvider:  Login Request 
-  Note right of ServiceProvider: Assertion Request Issuing 
-  
-  ServiceProvider->UserAgent:  Assertion Request
+  Title: SAML 2.0 (Security Assertion Markup Lanugage) Single-Sign-On (SSO) - Browser Based 
+  User->UserAgent:  Request\n (https://sp.com/resource)
+  UserAgent->ServiceProvider:  Login Request   
+  Note right of ServiceProvider: Assertion Request Issuing   
+
+  ServiceProvider->UserAgent:  Assertion Request\n(SAMLRequest,RelayState) 
+
   UserAgent-->IdentityProvider: Assertion Request Redirect
-  IdentityProvider->UserAgent: Assertion Response
+  IdentityProvider->UserAgent: Assertion Response\n(SAMLResponse,RelayState) 
+
+
 
   Note right of IdentityProvider: Assertion Issuing and Signing 
   UserAgent-->ServiceProvider: Assertion Response Redirect
 
-  Note right of ServiceProvider: 1.Validate Signature\n 2.Evaluate Assertion\n3.Authorize User
+  Note right of ServiceProvider: 1.Validate Signature\n 2.Evaluate Assertion\n3.Establish Security Context\n4.Authorize User
           
 
 </textarea>

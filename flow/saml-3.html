@@ -1,0 +1,81 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title> Flow Diagram</title>
+  <script src="https://github.com/DmitryBaranovskiy/raphael/raw/master/raphael-min.js"></script>
+ <link href="https://fonts.googleapis.com/css?family=Architects+Daughter" rel="stylesheet" type="text/css">
+<script src='http://adrai.github.io/flowchart.js/flowchart-latest.js'></script>
+
+    <script src="http://d1n0x3qji82z53.cloudfront.net/src-min-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<style>
+#editor { 
+        top: 60px;
+        width:700px;
+        height:1000px;
+        left: 10px;
+        border-radius:10px;
+}
+
+h3 {
+font-family: 'Architects Daughter', 'Helvetica Neue', Helvetica, Arial, serif;
+font-size: 18px;
+font-weight: bold;
+margin-bottom: 8px;
+color: #474747;
+}
+
+body {
+ padding:10px;
+}
+
+textarea {
+  border-radius:10px;
+  padding:10px;
+}
+
+</style>
+
+</head>
+<body>
+
+
+<h3>SAML (Security Assertion Markup Language) in Action
+
+<script>
+
+$(document).ready( function() {
+ var editor = ace.edit("editor");
+
+ var callback = function (data, status, xhr) {
+        //data will be the xml returned from the server
+        if (status == 'success') {
+            var editor = ace.edit("editor");
+            //apparently, only modes supported are 'html', 'javascript' & 'text'
+            editor.setTheme("ace/theme/monokai");
+            editor.getSession().setMode("ace/mode/html");
+            editor.setValue(data);
+        }
+ };
+    //using jQuery to fire off an ajax request to load the xml,
+    //using our callback as the success function
+ $.ajax(
+        {
+            url : './data/saml-response.xml',
+            dataType : 'text', //explicitly requesting the xml as text, rather than an xml document
+            success : callback
+        }
+ );
+
+});
+</script>
+
+<div id="editor">
+        
+</div>
+ 
+  
+</body>
+</html>
+
