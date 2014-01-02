@@ -1,0 +1,147 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title> SAML (Security Assertion Markup Lanugage)</title>
+
+
+  <script src="https://github.com/DmitryBaranovskiy/raphael/raw/master/raphael-min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
+  <script src="https://raw.github.com/bramp/js-sequence-diagrams/master/build/sequence-diagram-min.js"></script>
+ <link href="https://fonts.googleapis.com/css?family=Architects+Daughter" rel="stylesheet" type="text/css">
+
+    <script src="http://d1n0x3qji82z53.cloudfront.net/src-min-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+
+ 
+
+<style>
+
+h3 {
+font-family: 'Architects Daughter', 'Helvetica Neue', Helvetica, Arial, serif;
+font-size: 18px;
+font-weight: bold;
+margin-bottom: 8px;
+color: #474747;
+
+}
+#diagram {
+
+border:2px solid #99ccff;
+border-radius:10px;
+padding:10px;
+box-shadow: 3px 3px 3px #99ccff;
+}
+</style>
+
+
+</head>
+<body>
+<h3>SAML (Security Assertion Markup Lanugage)</h3>
+
+<div>
+<pre>
+Enables 3rd party app aka client (say: photoEdit.com)  to obtain limited access to:
+    -- HTTP service aka resource_server (say: photoShare.com)
+    on behalf of the resource_owner (say: user_joe)  by orchestrating an approval interaction
+    between:
+   resource_owner and resource_server: 
+
+ ------------------------FLOW--------------------------------------- 
+       Client ----> (A) Authorization_Request   ---->  resource_owner
+       Client <---- (B) Authorization_Grant     <----  resource_owner
+       
+--- 
+       Client ----> (C) (Authorization_Grant, Client_Credientials)
+                                              ---->  authorization_server
+       Client <---- (D) Access_Token          <----  authorization_server
+
+--- 
+       Client ----> (E) Access_Token          ---->  resource_server
+       Client <---- (F) Protected_Resource    <----  resource_server
+
+
+
+   
+     +--------+                               +---------------+
+     |        |--(A)- Authorization Request ->|   Resource    |
+     |        |                               |     Owner     |
+     |        |<-(B)-- Authorization Grant ---|               |
+     |        |                               +---------------+
+     |        |
+     |        |                               +---------------+
+     |        |--(C)-- Authorization Grant -->| Authorization |
+     | Client |                               |     Server    |
+     |        |<-(D)----- Access Token -------|               |
+     |        |                               +---------------+
+     |        |
+     |        |                               +---------------+
+     |        |--(E)----- Access Token ------>|    Resource   |
+     |        |                               |     Server    |
+     |        |<-(F)--- Protected Resource ---|               |
+     +--------+                               +---------------+
+     
+     (A)  The client requests authorization from the resource owner.  The
+        authorization request can be made directly to the resource owner
+        (as shown), or preferably indirectly via the authorization
+        server as an intermediary.
+
+   (B)  The client receives an authorization grant, which is a
+        credential representing the resource owner's authorization,
+        expressed using one of four grant types (authorization code, implicit, 
+        resource owner password credentials, and client credentials) or
+        using an extension grant type.  
+        The authorization grant type depends on the method used by the
+        client to request authorization and the types supported by the
+        authorization server.
+
+   (C)  The client requests an access token by authenticating with the
+        authorization server and presenting the authorization grant.
+
+   (D)  The authorization server authenticates the client and validates
+        the authorization grant, and if valid, issues an access token.
+        
+   (E) The client requests the protected resource from the resource
+        server and authenticates by presenting the access token.
+
+   (F)  The resource server validates the access token, and if valid,
+        serves the request.
+        
+   =============================================================
+</pre>
+
+</div>
+<textarea id="data" name="data" rows="10" cols="120">
+  Title: OAuth2  
+
+  Client-> Resource Owner:  Authorization Request
+  Resource Owner->Client:   Authorization Grant 
+
+  Client->Authorization Server: Authorization Grant 
+  Authorization Server->Client: Authorization Token
+  
+  Client->Resource Server: Authorization Token
+  Resource Server->Client: Protected Resource 
+
+</textarea>
+<div id="diagram"></div>
+<script>
+
+$(document).ready( function() {
+  var diagram = Diagram.parse( $('#data').val() );
+  diagram.drawSVG("diagram", {theme: 'simple'});
+   
+ $('#data').change( function() {
+  $('#diagram').html('');
+  diagram = Diagram.parse( $('#data').val() );
+  diagram.drawSVG("diagram", {theme: 'simple'});
+ });
+
+
+});
+</script>
+	
+</body>
+</html>
